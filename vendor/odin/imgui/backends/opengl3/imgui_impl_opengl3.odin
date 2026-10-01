@@ -2,8 +2,13 @@ package imgui_impl_opengl3
 
 import im "./../../"
 
-@(require, export)
-foreign import imguilib "system:apollo_ui"
+when ODIN_OS == .Windows {
+	@(require, export)
+	foreign import imguilib "system:apollo_ui.lib"
+} else {
+	@(require, export)
+	foreign import imguilib "system:apollo_ui"
+}
 
 @(default_calling_convention = "c", link_prefix = "ImGui_ImplOpenGL3_")
 foreign imguilib {

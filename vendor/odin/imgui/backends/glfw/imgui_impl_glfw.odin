@@ -2,8 +2,13 @@ package imgui_impl_glfw
 
 import "apollo:glfw"
 
-@(require, export)
-foreign import imguilib "system:apollo_ui"
+when ODIN_OS == .Windows {
+	@(require, export)
+	foreign import imguilib "system:apollo_ui.lib"
+} else {
+	@(require, export)
+	foreign import imguilib "system:apollo_ui"
+}
 
 @(default_calling_convention = "c", link_prefix = "ImGui_ImplGlfw_")
 foreign imguilib {

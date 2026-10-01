@@ -44,8 +44,13 @@ DestroyDefaultSpec :: proc() {
 	}
 }
 
-@(require, export)
-foreign import implotlib "system:apollo_ui"
+when ODIN_OS == .Windows {
+	@(require, export)
+	foreign import implotlib "system:apollo_ui.lib"
+} else {
+	@(require, export)
+	foreign import implotlib "system:apollo_ui"
+}
 
 // Constants
 IMPLOT_AUTO :: -1

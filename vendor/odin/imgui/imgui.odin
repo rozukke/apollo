@@ -6,8 +6,13 @@ when ODIN_OS == .Linux {
 	@(require) foreign import stdcpp "system:c++"
 }
 
-@(require, export)
-foreign import imguilib "system:apollo_ui"
+when ODIN_OS == .Windows {
+	@(require, export)
+	foreign import imguilib "system:apollo_ui.lib"
+} else {
+	@(require, export)
+	foreign import imguilib "system:apollo_ui"
+}
 
 // Verify ABI compatibility between caller code and compiled version of Dear ImGui.
 // This helps detects some build issues.
