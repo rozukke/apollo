@@ -105,7 +105,7 @@ main :: proc() {
 	}
 
 	io := im.GetIO()
-	io.ConfigFlags |= {.NavEnableKeyboard, .DockingEnable}
+	io.ConfigFlags |= {.NavEnableKeyboard}
 
 	ensure(imglfw.InitForOpenGL(window, true))
 	defer imglfw.Shutdown()
