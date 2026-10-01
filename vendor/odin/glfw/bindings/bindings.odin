@@ -5,7 +5,7 @@ import vk "vendor:vulkan"
 
 when ODIN_OS == .Windows {
 	foreign import glfw {
-		"system:glfw3.lib",
+		"system:glfw3dll.lib",
 		"system:user32.lib", 
 		"system:gdi32.lib", 
 		"system:shell32.lib",

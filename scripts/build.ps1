@@ -44,6 +44,14 @@ cmake --build $NativeBuild --config Debug
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $LibraryPath = Join-Path $NativeBuild "lib"
+$ExpectedLibraries = @("apollo_ui.lib", "glfw3dll.lib")
+foreach ($Library in $ExpectedLibraries) {
+    $LibraryFile = Join-Path $LibraryPath $Library
+    if (-not (Test-Path $LibraryFile)) {
+        throw "Expected native library was not produced: $LibraryFile"
+    }
+}
+
 odin build (Join-Path $Root "src") `
     "-collection:apollo=$(Join-Path $Root 'vendor/odin')" `
     "-extra-linker-flags:/LIBPATH:$LibraryPath" `
