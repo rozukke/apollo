@@ -32,8 +32,9 @@ the UI source itself does not come from Nix packages.
 
 ## Windows
 
-Install Odin, CMake, and the Visual Studio C++ build tools, then use a Developer
-PowerShell from the repository root:
+Install Odin, CMake, and the MSVC compiler plus Windows SDK. Then use either the
+PowerShell initialized by PortableBuildTools or an x64 Native Tools PowerShell
+from the repository root:
 
 ```powershell
 ./scripts/build.ps1
@@ -43,6 +44,13 @@ PowerShell from the repository root:
 The script builds GLFW and the UI bridge from the same vendored sources, links
 the Odin program, and places `glfw3.dll` beside the executable. This path is
 designed for native Windows builds; the Nix flake currently targets Linux.
+It automatically chooses Ninja, NMake, or Visual Studio as available. To force
+a generator, set `CMAKE_GENERATOR` before running it, for example:
+
+```powershell
+$env:CMAKE_GENERATOR = "NMake Makefiles"
+./scripts/build.ps1
+```
 
 ## Layout
 
