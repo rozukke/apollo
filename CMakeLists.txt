@@ -7,6 +7,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Odin links the static MSVC runtime on Windows. Keep every C/C++ target on
+# that same runtime even for a Debug build; mixing CMake's default /MDd with
+# Odin's libcmt produces LNK4098 and unresolved __stdio_common_* symbols.
+if(MSVC)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+endif()
+
 # Keep every generator's artifacts in predictable locations. This also avoids
 # Visual Studio adding a configuration subdirectory below lib/ and bin/.
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
