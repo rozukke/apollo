@@ -51,7 +51,12 @@ draw_waveform :: proc(state: ^Synth_State) {
 }
 
 draw_synth :: proc(state: ^Synth_State) {
-	im.Begin("Apollo synthesiser")
+	main_window_flags := im.WINDOW_FLAGS_NO_DECORATION + im.WindowFlags{.NoMove, .NoResize, .NoSavedSettings}
+	viewport := im.GetMainViewport()
+	im.SetNextWindowSize(viewport.Size)
+	im.SetNextWindowPos(viewport.Pos)
+
+	im.Begin("Apollo", nil, main_window_flags)
 	im.Text("A small signal-path playground")
 	im.Separator()
 
