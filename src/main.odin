@@ -12,14 +12,36 @@ import imglfw "apollo:imgui/backends/glfw"
 import imgl "apollo:imgui/backends/opengl3"
 import plot "apollo:implot"
 
+import ma "vendor:miniaudio"
+import e "engine"
+
+data_callback :: proc "c" (device: ^ma.device, output: rawptr, input: rawptr, frame_count: u32) {
+	// inject default context (odin quirk)
+	context = runtime.default_context()
+
+	engine := (^e.engine)(device.pUserData)
+	out := cast([^]f32)output
+
+	channels := device.playback.channels
+
+	out_idx := 0
+	for i in 0..<frame_count {
+		sample := e.next_sample(engine)
+
+		for c in 0..<channels {
+			out[out_idx] = sample
+			out_idx += 1
+		}
+	}
+}
+
 GLSL_VERSION :: "#version 150"
 
 Synth_State :: struct {
-	frequency: f32,
+	engine: e.engine,
 	gain:      f32,
 	attack:    f32,
 	release:   f32,
-	playing:   bool,
 }
 
 glfw_error_callback :: proc "c" (error: i32, description: cstring) {
@@ -30,11 +52,11 @@ glfw_error_callback :: proc "c" (error: i32, description: cstring) {
 draw_waveform :: proc(state: ^Synth_State) {
 	xs: [256]f32
 	ys: [256]f32
-	cycles := 1.0 + (state.frequency - 20.0) / 1980.0 * 7.0
+	cycles := 1.0 + (f32(state.engine.frequency) - 20.0) / 1980.0 * 7.0
 	for sample in 0 ..< len(xs) {
 		t := f32(sample) / f32(len(xs) - 1)
 		xs[sample] = t
-		ys[sample] = f32(math.sin(f64(t * cycles * 2 * math.PI))) * state.gain
+		ys[sample] = f32(math.sin(f64(t * cycles * 2 * math.PI))) * f32(state.engine.gain)
 	}
 
 	if plot.BeginPlot("Oscilloscope", im.Vec2{-1, 220}, {.NoTitle}) {
@@ -61,8 +83,8 @@ draw_synth :: proc(state: ^Synth_State) {
 	im.Separator()
 
 	im.Text("Oscillator")
-	im.SliderFloat("Frequency", &state.frequency, 20, 2000, "%.0f Hz")
-	im.SliderFloat("Gain", &state.gain, 0, 1, "%.2f")
+	im.SliderFloat("Frequency", &state.engine.frequency, 20, 2000, "%.0f Hz")
+	im.SliderFloat("Gain", &state.engine.gain, 0, 1, "%.2f")
 	im.Spacing()
 
 	im.Text("Envelope")
@@ -70,11 +92,11 @@ draw_synth :: proc(state: ^Synth_State) {
 	im.SliderFloat("Release", &state.release, 0.01, 4, "%.2f s")
 	im.Spacing()
 
-	if im.Button(state.playing ? "Stop" : "Play") {
-		state.playing = !state.playing
+	if im.Button(state.engine.playing ? "Stop" : "Play") {
+		state.engine.playing = !state.engine.playing
 	}
 	im.SameLine()
-	im.Text(state.playing ? "signal active" : "signal idle")
+	im.Text(state.engine.playing ? "signal active" : "signal idle")
 	im.Spacing()
 
 	draw_waveform(state)
@@ -117,13 +139,40 @@ main :: proc() {
 	ensure(imgl.Init(GLSL_VERSION))
 	defer imgl.Shutdown()
 
-	state := Synth_State{
-		frequency = 220,
+	clear_color := im.Vec4{0.025, 0.032, 0.045, 1.0}
+
+	// Audio setup
+	engine := e.engine{
+		phase = 0.0,
+		frequency = 440.0, // A4
+		sample_rate = 48000,
 		gain = 0.7,
+	}
+
+	state := Synth_State{
 		attack = 0.02,
 		release = 0.35,
+		engine = engine,
 	}
-	clear_color := im.Vec4{0.025, 0.032, 0.045, 1.0}
+
+	device_config := ma.device_config_init(.playback)
+	device_config.playback.format = .f32
+	device_config.playback.channels = 2
+	device_config.sampleRate = engine.sample_rate
+	device_config.dataCallback = data_callback
+	device_config.pUserData = &state.engine
+
+	device: ma.device
+	if ma.device_init(nil, &device_config, &device) != .SUCCESS {
+		fmt.eprintln("Failed to initialize playback device.")
+		return
+	}
+	defer ma.device_uninit(&device)
+
+	if ma.device_start(&device) != .SUCCESS {
+		fmt.eprintln("Failed to start playback device.")
+		return
+	}
 
 	for !glfw.WindowShouldClose(window) {
 		glfw.PollEvents()
